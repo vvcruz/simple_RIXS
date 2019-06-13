@@ -119,7 +119,7 @@ def sig_tensor(om,eloss,orb0,f,alpha,beta,gamma,delta,nel,n_excite,dip,tr_e,gamm
         y_int = y_int/((om - tr_e[i,orb0])**2 + gamma_c**2)
         #print(y,tr_e[i,f])
         if(y_int > 5e-7):
-            print('f =',f,'i=',i,'ef0=',tr_e[i,f],'intensity = ',y_int)
+            print('0 = ',orb0,'f =',f,'i=',i,'ef0=',tr_e[i,f],'intensity = ',y_int)
         y[:] = y[:] +  y_int*lorentz(tr_e[i,f] - eloss,gamma_f)
     return y 
 
@@ -149,7 +149,7 @@ def dump_data(fnam,x,y):
 # compute the electronic RIXS cross-section
 # from the transition dipole moment matrix
 # the matrix is given as <i| mu_\alpha |j > over all orbitals
-def compute_rixs(fnam,om,eloss_range,gamma_c,gamma_f=0.1,orb0=0,n_excite=1,n_decay=1,theta=90.0e0,neloss=1024):
+def compute_rixs(fnam,om,eloss_range,gamma_c,gamma_f=0.1,orb0=[0],n_excite=1,n_decay=1,theta=90.0e0,neloss=1024):
     print('single-electron RIXS')
     print('by Vinicius Vaz da Cruz')
     print('\n-------------\n\n')
@@ -173,8 +173,8 @@ def compute_rixs(fnam,om,eloss_range,gamma_c,gamma_f=0.1,orb0=0,n_excite=1,n_dec
     print('RIXS parameters')
     print('excitation energy = ',om,' eV')
     print('desired energy loss range = ',eloss_range[0],eloss_range[1],' eV')
-    print('idex of orbital to excite from= ',orb0)
-    print('number of unnocupioed orbitals to excite to = ',n_excite)
+    print('indexes of orbital to excite from= ',orb0)
+    print('number of unnocupied orbitals to excite to = ',n_excite)
     print('number of occupied orbitals to decay from   = ',n_decay)
          
     print('\n-------------\n')
@@ -199,7 +199,10 @@ def compute_rixs(fnam,om,eloss_range,gamma_c,gamma_f=0.1,orb0=0,n_excite=1,n_dec
 
     print('computing cross-section')
     eloss=np.linspace(eloss_range[0],eloss_range[1],neloss)
-    sig=rixs_cross_section(om,eloss,theta,dip,tr_e,norb,nel,orb0,n_excite,n_decay,gamma_c,gamma_f)
+    sig=np.zeros_like(eloss)
+    for orb in orb0:
+        sig_orb=rixs_cross_section(om,eloss,theta,dip,tr_e,norb,nel,orb,n_excite,n_decay,gamma_c,gamma_f)
+        sig = sig + sig_orb
     dump_data('rixs_test'+str(om)+'_'+str(theta)+'.dat',eloss,sig)
     print('done!\n')
     return
