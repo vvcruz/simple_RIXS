@@ -61,13 +61,14 @@ def gen_dip_input():
 # the next three columns correspond to the integral in X/Y/Z (a.u.), the final column is the norm
 def compute_dipoles(fnam):
     multiwfn="/home/vinicius/software/multiwfn/Multiwfn_3.6_dev_bin_Linux/Multiwfn"
-    os.system(multiwfn+" "+fnam+" < dip.inp > dip.out 2>&1")    
+    os.system(multiwfn+" "+fnam+".molden.input"+" < dip.inp > dip.out 2>&1")
+    os.system("mv orbint.txt "+fnam+"_orbint.txt")    
     return
 
 # read the transition dipole moments (x,y,z)
 # returns a matrix with dimensions dip[3,norb,norb] the first dimension being the xyz components
-def read_dipoles(norb,debug=False):
-    dip=np.genfromtxt('orbint.txt',usecols=(2,3,4),dtype=float,unpack=True)
+def read_dipoles(norb,fnam,debug=False):
+    dip=np.genfromtxt(fnam+'_orbint.txt',usecols=(2,3,4),dtype=float,unpack=True)
     print(dip.shape)
     dip=dip.reshape(3,norb,norb)
     print(dip.shape)
@@ -185,11 +186,16 @@ def compute_rixs(fnam,om,eloss_range,gamma_c,gamma_f=0.1,orb0=0,n_excite=1,n_dec
 
     print('\n-------------\n')
 
-    print('Computing transition dipole moments with MultiWfn')
-    gen_molden_orca(fnam)
-    gen_dip_input()
-    compute_dipoles(fnam+'.molden.input')
-    dip=read_dipoles(norb)
+    if(not os.path.isfile(fnam+"_orbint.txt")):
+        print('Computing transition dipole moments with MultiWfn')
+        gen_molden_orca(fnam)
+        gen_dip_input()
+        compute_dipoles(fnam)
+    else:
+        print('Previously computed transition dipole moments found!')
+        print('Reading data from '+fnam+'_orbint.txt')
+    dip=read_dipoles(norb,fnam)
+        
 
     print('computing cross-section')
     eloss=np.linspace(eloss_range[0],eloss_range[1],neloss)
