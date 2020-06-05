@@ -73,23 +73,20 @@ def compute_dipoles_tddft(fnam):
 # read the transition dipole moments (x,y,z)
 # returns a matrix with dimensions dip[3,n_states,n_states] the first dimension being the xyz components
 def read_dipoles_energy_tddft(n_states,fnam,debug=False):
-    #initialize dictionaries for transition dipoles and energies
-    dip={}
-    tr_en={}
-    for i in range(n_states):
-        dip[i]={}
-        tr_en[i]={}
+    #initialize np arrays for transition dipoles and energies
+    dip=np.zeros([n_states,n_states,3])
+    tr_en=np.zeros([n_states,n_states])
         
     # read file into variable
     f=open(fnam+"_transdipmom.txt",'r')
     content = f.readlines()
-
+    f.close()
     #start reading data: <0|r|0>
     #----------------------------------------
     l=0 # line counter
     i=0;j=0
-    dip[i][j]=np.genfromtxt(StringIO(content[0]),usecols=(6,7,8),dtype=float)
-    tr_en[i][j]=0.0e0
+    dip[i,j,:]=np.genfromtxt(StringIO(content[0]),usecols=(6,7,8),dtype=float)
+    tr_en[i,j]=0.0e0
     #-----------------------------------------
 
     # read <0|r|j>
@@ -103,8 +100,9 @@ def read_dipoles_energy_tddft(n_states,fnam,debug=False):
         st_i=int(content[l].strip().split()[0])
         st_j=int(content[l].strip().split()[1])
         if(st_i==i and st_j==j):
-            dip[i][j]=np.transpose(np.genfromtxt(StringIO(''.join(content[l])),dtype=float,usecols=(2,3,4)))
-            tr_en[i][j]=np.transpose(np.genfromtxt(StringIO(''.join(content[l])),dtype=float,usecols=(5)))
+            line=np.array(content[l].split()).astype(np.float)
+            dip[i,j,:]=line[2:5]
+            tr_en[i,j]=line[5]
         else:
             print('error reading file')
             return None
@@ -121,8 +119,9 @@ def read_dipoles_energy_tddft(n_states,fnam,debug=False):
             if(debug):
                 print("(",i,j,")","(",st_i,st_j,")",content[l].strip())
             if(st_i==i and st_j==j):
-                dip[i][j]=np.transpose(np.genfromtxt(StringIO(''.join(content[l])),dtype=float,usecols=(2,3,4)))
-                tr_en[i][j]=np.transpose(np.genfromtxt(StringIO(''.join(content[l])),dtype=float,usecols=(5)))
+                line=np.array(content[l].split()).astype(np.float)
+                dip[i,j,:]=line[2:5]
+                tr_en[i,j]=line[5]
             else:
                 print('error reading file')
                 return None
