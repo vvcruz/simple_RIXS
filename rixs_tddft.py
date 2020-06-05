@@ -59,52 +59,19 @@ def gen_dip_input_tddft(fnam):
     return
 
 # use multiwfn to compute the transition dipole moments
-# within a one-electron approximation
-# The integrals have been outputted to orbint.txt in current folder
-# The first and the second columns correspond to orbital indices,
-# the next three columns correspond to the integral in X/Y/Z (a.u.), the final column is the norm
+# between all CIS or TD-DFT states.
+# The integrals have been outputted to fnam+"_transdipmom.txt in current folder
+# The first and the second columns correspond to state indices,
+# the next three columns correspond to the integral in X/Y/Z (a.u.),
+# the 4th column is the transition energy and the final column is the total osc. strength
 def compute_dipoles_tddft(fnam):
     multiwfn="/home/vinicius/software/multiwfn/Multiwfn_3.6_dev_bin_Linux/Multiwfn"
     os.system(multiwfn+" "+fnam+".molden.input"+" < dip.inp > dip.out 2>&1")
     os.system("mv transdipmom.txt "+fnam+"_transdipmom.txt")    
     return
 
-# # read the transition dipole moments (x,y,z)
-# # returns a matrix with dimensions dip[3,norb,norb] the first dimension being the xyz components
-# def read_dipoles_energy_tddft(n_states,fnam,debug=False):
-#     f=open(fnam+"_transdipmom.txt",'r')
-#     content = f.readlines()
-#     dip=np.zeros((3,n_states,n_states))
-#     dip[:,0,0]=np.genfromtxt(StringIO(content[0]),usecols=(6,7,8),dtype=float)
-#     dip[:,0,1:]=np.transpose(np.genfromtxt(StringIO(''.join(content[4:n_states+4-1])),dtype=float,usecols=(2,3,4)))
-#     #print(dip[:,0,0])
-#     #print(dip[:,0,:])
-#     #
-#     n_l=(n_states+4-1) + 5
-#     for i in range(1):
-# #        for j in range(i,n_states):
-#         j=n_states - i -1
-#         print(i,j)
-#         dip[:,i,i:j]=np.transpose(np.genfromtxt(StringIO(''.join(content[n_l:n_l + j])),dtype=float,usecols=(2,3,4)))
-#         print(dip[:,i,i:j])
-
-#         n_l+=j
-#     # dip[:,0,n_states]=np.genfromtxt(fnam+"_transdipmom.txt",usecols=(2,3,4),dtype=float,skip_header=4,skip_footer)
-#     # print(dip.shape)
-#     # dip=dip.reshape(3,norb,norb)
-#     # print(dip.shape)
-#     # print(dip[0,0,0],dip[0,1,0],dip[0,0,1])
-#     # print(dip[1,0,0],dip[1,1,0],dip[1,0,1])
-
-#     # if(debug):
-#     #     f=open('check_dipoles.dat','w')
-#     #     for i in range(norb):
-#     #         for j in range(norb):
-#     #             print(i,j,' '.join(str(x) for x in dip[:,i,j]),file=f)
-#     return dip
-
 # read the transition dipole moments (x,y,z)
-# returns a matrix with dimensions dip[3,norb,norb] the first dimension being the xyz components
+# returns a matrix with dimensions dip[3,n_states,n_states] the first dimension being the xyz components
 def read_dipoles_energy_tddft(n_states,fnam,debug=False):
     #initialize dictionaries for transition dipoles and energies
     dip={}
@@ -231,7 +198,7 @@ def dump_map(fnam,x,y,z):
 
 # compute the electronic RIXS cross-section
 # from the transition dipole moment matrix
-# the matrix is given as <i| mu_\alpha |j > over all orbitals
+# the matrix is given as <i| mu_\alpha |j > over all CIS or TD-DFT states
 def compute_rixs(fnam,om,eloss_range,gamma_c,psi_0,psi_i,psi_f,gamma_f=0.1,theta=90.0e0,neloss=1024,do_xas=True):
     print('single-electron RIXS')
     print('by Vinicius Vaz da Cruz')
@@ -264,13 +231,6 @@ def compute_rixs(fnam,om,eloss_range,gamma_c,psi_0,psi_i,psi_f,gamma_f=0.1,theta
          
     print('\n-------------\n')
 
-    # print('Reading orbital energies and generating transition energies')
-    # # e is a 1D arrauy with n=params[5] entries
-    # e,tr_e=read_orca_orb_en(fnam+'.out',norb,debug=True)
-    # print('done!')
-
-    print('\n-------------\n')
-
     if(not os.path.isfile(fnam+"_transdipmom.txt")):
         print('Computing transition dipole moments with MultiWfn')
         gen_molden_orca(fnam)
@@ -291,12 +251,10 @@ def compute_rixs(fnam,om,eloss_range,gamma_c,psi_0,psi_i,psi_f,gamma_f=0.1,theta
 
     print('computing cross-section')
     eloss=np.linspace(eloss_range[0],eloss_range[1],neloss)
-    #sig=np.zeros_like(eloss)
     sig=np.zeros((om.size,eloss.size),dtype=float)
     for i in range(om.size):
         print('computing excitation energy ',om[i],'eV')
         for zero in psi_0:
-            #sig_orb=rixs_cross_section(om[i],eloss,theta,dip,tr_e,norb,nel,orb,n_excite,n_decay,gamma_c,gamma_f)
             sig_zero=rixs_cross_section(om[i],eloss,theta,dip,tr_e,zero,psi_i,psi_f,gamma_c,gamma_f)
             sig[i,:] = sig[i,:] + sig_zero
             dump_data(fnam+'_rixs_'+str(om[i])+'_'+str(theta)+'.dat',eloss,sig[i,:])
