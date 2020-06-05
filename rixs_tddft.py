@@ -158,7 +158,7 @@ def sig_tensor(om,eloss,zero,f,alpha,beta,gamma,delta,psi_i,dip,tr_e,gamma_c,gam
     y_int = y_int/((om - tr_e[zero,psi_i])**2 + gamma_c**2)
     
     for i in np.where(y_int > 5e-5)[0]:
-        print('0 = ',zero,'f =',f,'i=',i,'ef0=',tr_e[zero][f],'intensity = ','%5.3e'%y_int[i])
+        print('0 = ',zero,'f =',f,'i=',psi_i[i],'ef0=',tr_e[zero][f],'intensity = ','%5.3e'%y_int[i])
     return y_int.sum()*line_shape(tr_e[zero,f] - eloss,gamma_f,tp)
 
 def rixs_cross_section(om,eloss,theta,dip,tr_e,zero,psi_i,psi_f,gamma_c,gamma_f):#rixs_cross_section(om,eloss,theta,dip,tr_e,norb,nel,orb0,n_excite,n_decay,gamma_c,gamma_f):
